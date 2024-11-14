@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>Shopping Cart</h1>
+    </header>
+
+    <main>
+        <!-- Product List -->
+        <section id="products">
+            <h2>Products</h2>
+            <div class="product" data-id="1" data-name="Product A" data-price="10">
+                <h3>Product A</h3>
+                <p>Price: $10</p>
+                <button class="add-to-cart">Add to Cart</button>
+            </div>
+            <div class="product" data-id="2" data-name="Product B" data-price="15">
+                <h3>Product B</h3>
+                <p>Price: $15</p>
+                <button class="add-to-cart">Add to Cart</button>
+            </div>
+            <div class="product" data-id="3" data-name="Product C" data-price="20">
+                <h3>Product C</h3>
+                <p>Price: $20</p>
+                <button class="add-to-cart">Add to Cart</button>
+            </div>
+        </section>
+
+        <!-- Shopping Cart -->
+        <section id="cart">
+            <h2>Your Cart</h2>
+            <div id="cart-items"></div>
+            <div id="cart-total">
+                <strong>Total: $<span id="total-price">0</span></strong>
+            </div>
+            <button id="clear-cart">Clear Cart</button>
+            <button id="checkout">Checkout</button>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
+ /* Basic styling for layout and aesthetics */
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+    color: #333;
+}
+
+header {
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    padding: 1rem 0;
+}
+
+main {
+    display: flex;
+    justify-content: space-between;
+    padding: 20px;
+}
+
+#products, #cart {
+    width: 45%;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+}
+
+.product {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 10px;
+}
+
+.product h3 {
+    margin: 0 0 5px;
+}
+
+button {
+    padding: 10px;
+    margin-top: 10px;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.add-to-cart {
+    background-color: #28a745;
+}
+
+#cart-items {
+    margin-top: 20px;
+}
+
+.cart-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid #ddd;
+}
+
+.quantity {
+    width: 40px;
+}
+
+.remove-item {
+    background-color: #dc3545;
+    padding: 5px 10px;
+}
+
+#clear-cart, #checkout {
+    margin-top: 10px;
+    background-color: #007bff;
+    width: 100%;
+    padding: 10px;
+}
+// Shopping Cart JavaScript with localStorage
+
+let cart = [];
+
+// Load cart from localStorage
+document.addEventListener("DOMContentLoaded", () => {
+    const savedCart = localStorage.getItem("cart");
+    if (savedCart) {
+        cart = JSON.parse(savedCart);
+        renderCart();
+    }
+});
+
+// Add event listeners to "Add to Cart" buttons
+document.querySelectorAll(".add-to-cart").forEach(button => {
+    button.addEventListener("click", addToCart);
+});
+
+// Add to Cart function
+function addToCart(event) {
+    const productElement = event.target.closest(".product");
+    const id = productElement.getAttribute("data-id");
+    const name = productElement.getAttribute("data-name");
+    const price = parseFloat(productElement.getAttribute("data-price"));
+    const existingItem = cart.find(item => item.id === id);
+
+    if (existingItem) {
+        existingItem.quantity += 1;
+    } else {
+        cart.push({ id, name, price, quantity: 1 });
+    }
+
+    saveCart();
+    renderCart();
+}
+
+// Render cart items
+function renderCart() {
+    const cartItemsContainer = document.getElementById("cart-items");
+    cartItemsContainer.innerHTML = "";
+
+    cart.forEach(item => {
+        const cartItem = document.createElement("div");
+        cartItem.className = "cart-item";
+        cartItem.innerHTML = `
+            <span>${item.name}</span>
+            <input type="number" class="quantity" min="1" value="${item.quantity}" data-id="${item.id}">
+            <span>$${(item.price * item.quantity).toFixed(2)}</span>
+            <button class="remove-item" data-id="${item.id}">Remove</button>
+        `;
+        cartItemsContainer.appendChild(cartItem);
+    });
+
+    updateTotal();
+}
+
+// Update total price
+function updateTotal() {
+    const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    document.getElementById("total-price").innerText = total.toFixed(2);
+}
+
+// Save cart to localStorage
+function saveCart() {
+    localStorage.setItem("cart", JSON.stringify(cart));
+}
+
+// Event listener for changing quantities and removing items
+document.getElementById("cart-items").addEventListener("change", updateQuantity);
+document.getElementById("cart-items").addEventListener("click", removeItem);
+
+// Update item quantity
+function updateQuantity(event) {
+    if (event.target.classList.contains("quantity")) {
+        const id = event.target.getAttribute("data-id");
+        const quantity = parseInt(event.target.value);
+        const item = cart.find(item => item.id === id);
+
+        if (item && quantity > 0) {
+            item.quantity = quantity;
+            saveCart();
+            renderCart();
+        }
+    }
+}
+
+// Remove item from cart
+function removeItem(event) {
+    if (event.target.classList.contains("remove-item")) {
+        const id = event.target.getAttribute("data-id");
+        cart = cart.filter(item => item.id !== id);
+        saveCart();
+        renderCart();
+    }
+}
+
+// Clear cart button
+document.getElementById("clear-cart").addEventListener("click", () => {
+    cart = [];
+    saveCart();
+    renderCart();
+});
+
+// Checkout button
+document.getElementById("checkout").addEventListener("click", () => {
+    if (cart.length === 0) {
+        alert("Your cart is empty!");
+    } else {
+        alert("Thank you for your purchase!");
+        cart = [];
+        saveCart();
+        renderCart();
+    }
+});
